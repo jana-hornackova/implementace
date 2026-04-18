@@ -63,15 +63,15 @@ y_st = y + e_st;
 
 %% estimace stavu
 [x_f_KF, P_f_KF] = KF(u, y_n, x_0, P_0, A, B, C, Q, R_n);
-[x_s_RTSS, P_s_RTSS] = RTSS(u, y_n, x_0, P_0, A, B, C, Q, R_n);
+[x_v_RTSS, P_v_RTSS] = RTSS(u, y_n, x_0, P_0, A, B, C, Q, R_n);
 [x_f_STF, P_f_STF] = STF(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
-[x_s_STS, P_s_STS] = STS(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_f_KF_R, P_f_KF_R] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
 
-vysledky = {x_f_KF, x_f_STF, x_f_KF_R, x_s_RTSS, x_s_STS};
+vysledky = {x_f_KF_R, x_f_STF, x_f_KF_R, x_v_RTSS};
 odchylky = zeros(numel(vysledky), 2);
 for i = 1:numel(vysledky)
      [odchylky(i, 1), odchylky(i,2)]= MSE(vysledky{i}, x_real);
 end
+
 
 

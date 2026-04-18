@@ -1,4 +1,4 @@
-function [x_f,P_f] = stf_VB(u, y, x_0, P_0, A, B, C, Q, nu, R)
+function [x_f,P_f] = STF(u, y, x_0, P_0, A, B, C, Q, nu, R)
 steps = width(y);
 x_pred = cell([1 steps]);
 x_f = cell([1 steps]);
