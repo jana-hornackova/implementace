@@ -25,12 +25,13 @@ q = 1;
 Q = q*kron([Ts^3/3 Ts^2/2;Ts^2/2 Ts], eye(2)); 
 
 %sum mereni
-%normalni
-r = 10;
-R_n = r * eye(2);
 %studentuv
+r = 10;
 R_st = r * eye(2);
 nu = 3;
+%normalni
+R_n = R_st * nu /(nu-2);
+
 
 %% simulace
 %generovani vstupu
