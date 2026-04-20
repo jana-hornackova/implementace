@@ -1,4 +1,4 @@
-function [x_f,P_f] = KF_R(u, y, x_0, P_0, A, B, C, Q, Sigma_0, nu_0)
+function [x_f,P_f, Sigma, nu] = KF_R(u, y, x_0, P_0, A, B, C, Q, Sigma_0, nu_0)
 steps = width(y);
 x_pred = cell([1 steps]);
 x_f = cell([1 steps]);
