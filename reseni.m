@@ -75,7 +75,7 @@ y_st = y + e_st;
 [x_s_RTSS, P_s_RTSS] = RTSS(u, y_n, x_0, P_0, A, B, C, Q, R_n);
 [x_f_STF, P_f_STF] = STF(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_s_STS, P_s_STS] = STS(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
-[x_f_KF_R, P_f_KF_R] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_f_KF_R, P_f_KF_R, Sigma_f_KF_R, nu_f_KF_R] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
 [x_s_KS_R, P_s_KS_R] = KS_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
 [x_f_STF_R, P_f_STF_R] = STF_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 [x_s_STS_R, P_s_STS_R] = STS_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
@@ -146,3 +146,32 @@ for i = 1:1:steps
 end
 
 y_test = y + e;
+
+%nalezeni optimalnich parametru
+r = 100:1:400;
+nu = 3:2:100;
+
+bar = waitbar(0, "0 %");
+iters = numel(r);
+for i = 1:iters
+R_test = r(i)*eye(2);
+
+[x_f_KF, P_f_KF] = KF(u, y_test, x_0, P_0, A, B, C, Q, R_test);
+MSE_KF(i) = MSE(x_f_KF, x_real);
+
+for j = 1:numel(nu)
+[x_f_STF, P_f_STF] = STF(u, y_test, x_0, P_0, A, B, C, Q, nu(j), R_test);
+MSE_STF(i,j) = MSE(x_f_STF, x_real);
+end
+
+waitbar(i/iters, bar, num2str(100*i/iters)+ " %");
+end
+close(bar)
+figure
+plot(r, MSE_KF)
+xlabel("r")
+ylabel("MSE")
+figure
+imshow(MSE_STF, [])
+xlabel("\nu")
+ylabel("r")
