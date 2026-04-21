@@ -115,7 +115,7 @@ close(bar)
 %%
 tabulka = table('RowNames',algoritmy);
 tabulka.("Normalní šum") = odchylky_n;
-tabulka.("Studentův šum") = odchylky_n;
+tabulka.("Studentův šum") = odchylky_st;
 tabulka
 
 %% simulace - testování proti výpadkům měření
