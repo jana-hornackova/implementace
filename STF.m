@@ -36,6 +36,4 @@ for k = 1:steps
    x_pred{k+1} = A*x_f{k} + B*u(k);
 end
 
-x_f = cell2mat(x_f);
-
 end

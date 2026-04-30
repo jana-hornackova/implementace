@@ -47,6 +47,4 @@ for k = 1:steps
    Sigma{k+1} = Sigma{k};
 end
 
-x_f = cell2mat(x_f);
-
 end

@@ -3,8 +3,8 @@ clear
 close all
 
 %parametry simulace
-Ts = 0.2;
-TMAX = 50;
+Ts = 0.1;
+TMAX = 10;
 t = 0:Ts:TMAX;
 steps = length(t);
 
@@ -15,12 +15,12 @@ C=[eye(2) zeros(2)];
 
 %parametry sumu
 %procesni sum
-q = 1;
+q = 5;
 Q = q*kron([Ts^3/3 Ts^2/2;Ts^2/2 Ts], eye(2)); 
 
 %sum mereni
 %studentuv
-r = 10;
+r = 5;
 R_st = r * eye(2);
 nu = 5;
 %normalni
@@ -31,16 +31,16 @@ R_n = R_st * nu /(nu-2);
 %inicializacni hodnoty
 x_0 = [0; 0; 1; 1];
 P_0 = eye(4);
-Sigma_0 =100* eye(2);
+Sigma_0 = eye(2);
 nu_0 = 5;
 s_0 = 3;
 
 algoritmy  = ["KF"; "STF"; "KF R"; "STF R"; "RTSS"; "STS"; "KS R"; "STS R"];
-odchylky_n = zeros([length(algoritmy) 2]);
-odchylky_st = zeros([length(algoritmy) 2]);
+odchylky_n = zeros([length(algoritmy) 1]);
+odchylky_st = zeros([length(algoritmy) 1]);
 
 iters = 10;
-bar = waitbar(0, "0 %");
+bar = waitbar(0, "Probíhá simulace, část 1: 0 %");
 
 for j = 1:iters
 %generovani vstupu
@@ -58,7 +58,7 @@ end
 
 %generovani sumu mereni
 e_n = mvnrnd(zeros(1, length(R_n)), R_n, steps)'; %normalni
-e_st = mvtrnd(R_st, nu)'; %studentuv
+e_st = mvtrnd(R_st, nu, steps)'; %studentuv
 
 %generovani vystupu
 y = zeros([height(C) steps]);
@@ -71,52 +71,71 @@ y_n = y + e_n;
 y_st = y + e_st;
 
 % estimace stavu pro system zatizeny normalnim sumem
-[x_f_KF, P_f_KF] = KF(u, y_n, x_0, P_0, A, B, C, Q, R_n);
-[x_s_RTSS, P_s_RTSS] = RTSS(u, y_n, x_0, P_0, A, B, C, Q, R_n);
-[x_f_STF, P_f_STF] = STF(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
-[x_s_STS, P_s_STS] = STS(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
-[x_f_KF_R, P_f_KF_R, Sigma_f_KF_R, nu_f_KF_R] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_s_KS_R, P_s_KS_R] = KS_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_f_STF_R, P_f_STF_R] = STF_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
-[x_s_STS_R, P_s_STS_R] = STS_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_f_KF_n, P_f_KF_n] = KF(u, y_n, x_0, P_0, A, B, C, Q, R_n);
+[x_s_RTSS_n, P_s_RTSS_n] = RTSS(u, y_n, x_0, P_0, A, B, C, Q, R_n);
+[x_f_STF_n, P_f_STF_n] = STF(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
+[x_s_STS_n, P_s_STS_n] = STS(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
+[x_f_KF_R_n, P_f_KF_R_n, Sigma_f_KF_R_n, nu_f_KF_R_n] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_s_KS_R_n, P_s_KS_R_n] = KS_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_f_STF_R_n, P_f_STF_R_n] = STF_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_s_STS_R_n, P_s_STS_R_n] = STS_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 
-vysledky_n = {x_f_KF, x_f_STF, x_f_KF_R, x_f_STF_R, x_s_RTSS, x_s_STS, x_s_KS_R, x_s_STS_R};
+vysledky_n = {x_f_KF_n, x_f_STF_n, x_f_KF_R_n, x_f_STF_R_n, x_s_RTSS_n, x_s_STS_n, x_s_KS_R_n, x_s_STS_R_n};
 
 for i = 1:numel(vysledky_n)
-     [MSE_r, MSE_v] = MSE(vysledky_n{i}, x_real);
+     MSE_r = MSE(cell2mat(vysledky_n{i}), x_real);
      odchylky_n(i, 1)= ((j-1)*odchylky_n(i,1)+MSE_r)/j; 
-     odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+MSE_v)/j;
+     %odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+MSE_v)/j;
 end
 
 % estimace stavu pro system zatizeny studentovym sumem
-[x_f_KF, P_f_KF] = KF(u, y_st, x_0, P_0, A, B, C, Q, R_n);
-[x_s_RTSS, P_s_RTSS] = RTSS(u, y_st, x_0, P_0, A, B, C, Q, R_n);
-[x_f_STF, P_f_STF] = STF(u, y_st, x_0, P_0, A, B, C, Q, nu, R_st);
-[x_s_STS, P_s_STS] = STS(u, y_st, x_0, P_0, A, B, C, Q, nu, R_st);
-[x_f_KF_R, P_f_KF_R, Sigma_f_KF_R, nu_f_KF_R] = KF_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_s_KS_R, P_s_KS_R] = KS_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_f_STF_R, P_f_STF_R] = STF_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
-[x_s_STS_R, P_s_STS_R] = STS_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_f_KF_st, P_f_KF_st] = KF(u, y_st, x_0, P_0, A, B, C, Q, R_n);
+[x_s_RTSS_st, P_s_RTSS_st] = RTSS(u, y_st, x_0, P_0, A, B, C, Q, R_n);
+[x_f_STF_st, P_f_STF_st] = STF(u, y_st, x_0, P_0, A, B, C, Q, nu, R_st);
+[x_s_STS_st, P_s_STS_st] = STS(u, y_st, x_0, P_0, A, B, C, Q, nu, R_st);
+[x_f_KF_R_st, P_f_KF_R_st, Sigma_f_KF_R_st, nu_f_KF_R_st] = KF_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_s_KS_R_st, P_s_KS_R_st] = KS_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_f_STF_R_st, P_f_STF_R_st] = STF_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_s_STS_R_st, P_s_STS_R_st] = STS_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 
-vysledky_st = {x_f_KF, x_f_STF, x_f_KF_R, x_f_STF_R, x_s_RTSS, x_s_STS, x_s_KS_R, x_s_STS_R};
+vysledky_st = {x_f_KF_st, x_f_STF_st, x_f_KF_R_st, x_f_STF_R_st, x_s_RTSS_st, x_s_STS_st, x_s_KS_R_st, x_s_STS_R_st};
 
 for i = 1:numel(vysledky_st)
-     [MSE_r, MSE_v] = MSE(vysledky_st{i}, x_real);
+     MSE_r = MSE(cell2mat(vysledky_st{i}), x_real);
      odchylky_st(i, 1)= ((j-1)*odchylky_st(i,1)+MSE_r)/j; 
-     odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+MSE_v)/j;
+     %odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+MSE_v)/j;
 end
 
-waitbar(j/iters, bar, num2str(100*j/iters)+ " %");
+waitbar(j/iters, bar, "Probíhá simulace, část 1: " + num2str(100*j/iters)+ " %");
 
 end
-
 close(bar)
 
+R_KF_R_n = cell(1, steps);
+R_KF_R_st = cell(1, steps);
+for k = 1:steps
+    R_KF_R_n{k}= Sigma_f_KF_R_n{k}/nu_f_KF_R_n{k};
+    R_KF_R_st{k}= Sigma_f_KF_R_st{k}/nu_f_KF_R_st{k};
+end
 %%
 tabulka = table('RowNames',algoritmy);
 tabulka.("Normalní šum") = odchylky_n;
 tabulka.("Studentův šum") = odchylky_st;
 tabulka
+
+% x_s_KS_R = cell2mat(x_s_KS_R);
+% x_f_KF_R = cell2mat(x_f_KF_R);
+% 
+% figure
+% stairs(x_real(1,:)')
+% hold on
+% stairs(x_s_KS_R(1,:)')
+% hold on
+% stairs(x_f_KF_R(1,:)')
+% hold on
+% stairs(y_st(1,:)')
+% legend("real", "ksr", "rtss", "y")
+
 
 %% simulace - testování proti výpadkům měření
 
@@ -148,30 +167,64 @@ end
 y_test = y + e;
 
 %nalezeni optimalnich parametru
-r = 100:1:400;
-nu = 3:2:100;
+r = logspace(-3, 6, 1000);
+nu = 2:0.1:100;
 
-bar = waitbar(0, "0 %");
+bar = waitbar(0, "Probíhá simulace, část 2: 0 %");
 iters = numel(r);
+MSE_KF = zeros(iters, 1);
+MSE_STF = zeros(iters, numel(nu));
 for i = 1:iters
 R_test = r(i)*eye(2);
 
 [x_f_KF, P_f_KF] = KF(u, y_test, x_0, P_0, A, B, C, Q, R_test);
-MSE_KF(i) = MSE(x_f_KF, x_real);
+x_pred = circshift(A*cell2mat(x_f_KF)+B*u, 1, 2);
+x_pred(:, 1) = x_0;
+y_pred = C*x_pred;
+
+MSE_KF(i) = MSE(y_pred, y_test);
 
 for j = 1:numel(nu)
 [x_f_STF, P_f_STF] = STF(u, y_test, x_0, P_0, A, B, C, Q, nu(j), R_test);
-MSE_STF(i,j) = MSE(x_f_STF, x_real);
+
+x_pred = circshift(A*cell2mat(x_f_STF)+B*u, 1, 2);
+x_pred(:, 1) = x_0;
+y_pred = C*x_pred;
+
+MSE_STF(i,j) = MSE(y_pred, y_test);
 end
 
-waitbar(i/iters, bar, num2str(100*i/iters)+ " %");
+waitbar(i/iters, bar,"Probíhá simulace, část 2: " + num2str(100*i/iters)+ " %");
 end
 close(bar)
+save("MSE_KF_big.mat", "MSE_KF")
+save("MSE_STF_big.mat", "MSE_STF")
+
+%%
 figure
-plot(r, MSE_KF)
+semilogx(r, MSE_KF)
 xlabel("r")
 ylabel("MSE")
 figure
 imshow(MSE_STF, [])
 xlabel("\nu")
 ylabel("r")
+
+% plot surface with logarithmic scales for r and nu using MSE_STF
+% r is logarithmically spaced; nu is linear. Create meshgrid for plotting.
+[R_grid, Nu_grid] = meshgrid(r, nu);
+
+% MSE_STF is size [numel(r) x numel(nu)] as constructed above.
+% Transpose or permute to match meshgrid orientation (Nu along rows, R along columns).
+Z = MSE_STF'; % now size [numel(nu) x numel(r)]
+
+figure
+% use surf with log-scale x-axis
+surf(R_grid, Nu_grid, Z, 'EdgeColor', 'none')
+set(gca, 'XScale', 'log')
+xlabel('r (log scale)')
+ylabel('\nu')
+zlabel('MSE')
+title('MSE_{STF} over r and \nu')
+colorbar
+view(45,30)
