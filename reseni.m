@@ -214,8 +214,8 @@ end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro STF: " + num2str(100*i/iters)+ " %");
 end
 close(bar)
-%save("MSE_KF_big.mat", "MSE_KF")
-%save("MSE_STF_big.mat", "MSE_STF")
+%save("MSE_KF.mat", "MSE_KF", "r_n")
+%save("MSE_STF.mat", "MSE_STF", "r_st", "nu")
 
 %%
 [nu_grid, r_grid] = meshgrid(nu, r_st);
