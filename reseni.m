@@ -2,6 +2,7 @@ clc
 clear
 close all
 
+%%
 %parametry simulace
 Ts = 0.1;
 TMAX = 10;
@@ -154,7 +155,7 @@ end
 
 %generovani sumu mereni
 e = mvnrnd(zeros(1, length(R_n)), R_n, steps)'; 
-t_var = mod(steps, 20):mod(steps, 20):steps; %časy ve kterých naroste variance
+t_var = 20:20:steps; %časy ve kterých naroste variance
 e_100 = mvnrnd(zeros(1, length(R_n)), 100*R_n, numel(t_var))';
 e(:, t_var) = e_100;
 
@@ -166,16 +167,15 @@ end
 
 y_test = y + e;
 
-%nalezeni optimalnich parametru
-r = logspace(-3, 6, 1000);
-nu = 2:0.1:100;
+%% nalezeni optimalnich parametru pro KF
+r_n = logspace(0, 3, 1000);
 
-bar = waitbar(0, "Probíhá simulace, část 2: 0 %");
-iters = numel(r);
+bar = waitbar(0, "Probíhá hledání optimálních parametrů pro KF: 0 %");
+iters = numel(r_n);
 MSE_KF = zeros(iters, 1);
-MSE_STF = zeros(iters, numel(nu));
+
 for i = 1:iters
-R_test = r(i)*eye(2);
+R_test = r_n(i)*eye(2);
 
 [x_f_KF, P_f_KF] = KF(u, y_test, x_0, P_0, A, B, C, Q, R_test);
 x_pred = circshift(A*cell2mat(x_f_KF)+B*u, 1, 2);
@@ -183,6 +183,23 @@ x_pred(:, 1) = x_0;
 y_pred = C*x_pred;
 
 MSE_KF(i) = MSE(y_pred, y_test);
+waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro KF: " + num2str(100*i/iters)+ " %");
+end
+%%
+figure
+semilogx(r_n, MSE_KF)
+xlabel("r")
+ylabel("MSE")
+
+%% nalezeni optimalnich parametru pro STF
+r_st = logspace(-1, 2, 100);
+nu = 2:1:50;
+
+bar = waitbar(0, "Probíhá hledání optimálních parametrů pro STF: 0 %");
+iters = numel(r_st);
+MSE_STF = zeros(iters, numel(nu));
+for i = 1:iters
+R_test = r_st(i)*eye(2);
 
 for j = 1:numel(nu)
 [x_f_STF, P_f_STF] = STF(u, y_test, x_0, P_0, A, B, C, Q, nu(j), R_test);
@@ -194,37 +211,19 @@ y_pred = C*x_pred;
 MSE_STF(i,j) = MSE(y_pred, y_test);
 end
 
-waitbar(i/iters, bar,"Probíhá simulace, část 2: " + num2str(100*i/iters)+ " %");
+waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro STF: " + num2str(100*i/iters)+ " %");
 end
 close(bar)
-save("MSE_KF_big.mat", "MSE_KF")
-save("MSE_STF_big.mat", "MSE_STF")
+%save("MSE_KF_big.mat", "MSE_KF")
+%save("MSE_STF_big.mat", "MSE_STF")
 
 %%
-figure
-semilogx(r, MSE_KF)
-xlabel("r")
-ylabel("MSE")
-figure
-imshow(MSE_STF, [])
-xlabel("\nu")
-ylabel("r")
-
-% plot surface with logarithmic scales for r and nu using MSE_STF
-% r is logarithmically spaced; nu is linear. Create meshgrid for plotting.
-[R_grid, Nu_grid] = meshgrid(r, nu);
-
-% MSE_STF is size [numel(r) x numel(nu)] as constructed above.
-% Transpose or permute to match meshgrid orientation (Nu along rows, R along columns).
-Z = MSE_STF'; % now size [numel(nu) x numel(r)]
+[nu_grid, r_grid] = meshgrid(nu, r_st);
 
 figure
-% use surf with log-scale x-axis
-surf(R_grid, Nu_grid, Z, 'EdgeColor', 'none')
-set(gca, 'XScale', 'log')
-xlabel('r (log scale)')
-ylabel('\nu')
+surf(nu_grid, r_grid, MSE_STF, 'EdgeColor', 'none')
+set(gca, 'YScale', 'log')
+xlabel('\nu')
+ylabel('r')
 zlabel('MSE')
-title('MSE_{STF} over r and \nu')
 colorbar
-view(45,30)
