@@ -1,4 +1,5 @@
 function [x_s,P_s] = STS(u, y, x_0, P_0, A, B, C, Q, nu, R)
+mathring_y = height(y);
 steps = width(y);
 x_pred = cell([1 steps]);
 x_f = cell([1 steps]);
@@ -12,7 +13,7 @@ x_pred{1} = x_0;
 P_pred{1} = P_0;
 
 iters = 10; %pocet iteraci IVB algoritmu
-mathring_y = height(y);
+
 s = nu + mathring_y;
 
 for i = 1:iters

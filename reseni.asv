@@ -5,7 +5,7 @@ close all
 %%
 %parametry simulace
 Ts = 0.1;
-TMAX = 20;
+TMAX = 10;
 t = 0:Ts:TMAX;
 steps = length(t);
 
@@ -31,7 +31,7 @@ R_n = R_st * nu /(nu-2);
 %% simulace - urceni MSE algoritmu
 %inicializacni hodnoty
 x_0 = [0; 0; 1; 1];
-P_0 = 1*eye(4);
+P_0 = 100*eye(4);
 Sigma_0 = 0.1*eye(2);
 nu_0 = 0.1;
 s_0 = 0.1;
@@ -39,11 +39,6 @@ s_0 = 0.1;
 algoritmy  = ["KF"; "STF"; "KF R"; "STF R"; "RTSS"; "STS"; "KS R"; "STS R"];
 odchylky_n = zeros([length(algoritmy) 1]);
 odchylky_st = zeros([length(algoritmy) 1]);
-avg_R_n = cell([1, 4]);
-for k = 1:numel(avg_R_n)
-    avg_R_n{k} = zeros(size(R_n));
-end
-avg_R_st = avg_R_n;
 
 
 iters = 10;
@@ -84,7 +79,7 @@ y_st = y + e_st;
 [x_s_STS_n, ~] = STS(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_f_KF_R_n, ~, R_KF_R_n] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
 [x_s_KS_R_n, ~] = KS_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_f_STF_R_n, ~, R_STF_R_n] = STF_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_f_STF_R_n, R_STF_R_n] = STF_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 [x_s_STS_R_n, ~] = STS_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 
 vysledky_n = {x_f_KF_n, x_f_STF_n, x_f_KF_R_n, x_f_STF_R_n, x_s_RTSS_n, x_s_STS_n, x_s_KS_R_n, x_s_STS_R_n};
@@ -94,9 +89,6 @@ for i = 1:numel(vysledky_n)
      MSE_r = MSE(cell2mat(vysledky_n{i}), x_real);
      odchylky_n(i, 1)= ((j-1)*odchylky_n(i,1)+MSE_r)/j; 
      %odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+MSE_v)/j;
-end
-
-for i = 1:numel(R)
      avg_R_n{i} = ((j-1)*avg_R_n{i}+R{i})/j;
 end
 
@@ -111,18 +103,16 @@ end
 [x_s_STS_R_st, ~] = STS_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 
 vysledky_st = {x_f_KF_st, x_f_STF_st, x_f_KF_R_st, x_f_STF_R_st, x_s_RTSS_st, x_s_STS_st, x_s_KS_R_st, x_s_STS_R_st};
-R = {R_KF_R_st, R_STF_R_st};
+R_st = {R_KF_R_st, R_STF_R_st};
 
 for i = 1:numel(vysledky_st)
      MSE_r = MSE(cell2mat(vysledky_st{i}), x_real);
      odchylky_st(i, 1)= ((j-1)*odchylky_st(i,1)+MSE_r)/j; 
      %odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+MSE_v)/j;
-     
+     avg_R_st{i} = ((j-1)*avg_R_st{i}+R{i})/j;
 end
 
-for i = 1:numel(R)
-    avg_R_st{i} = ((j-1)*avg_R_st{i}+R{i})/j;
-end
+
 
 waitbar(j/iters, bar, "Probíhá simulace, část 1: " + num2str(100*j/iters)+ " %");
 

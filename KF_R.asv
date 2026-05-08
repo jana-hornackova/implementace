@@ -1,4 +1,4 @@
-function [x_f,P_f, R] = KF_R(u, y, x_0, P_0, A, B, C, Q, Sigma_0, nu_0)
+function [x_f,P_f, Sigma, nu] = KF_R(u, y, x_0, P_0, A, B, C, Q, Sigma_0, nu_0)
 steps = width(y);
 x_pred = cell([1 steps]);
 x_f = cell([1 steps]);
@@ -15,7 +15,6 @@ nu{1} = nu_0+1;
 Sigma{1} = Sigma_0;
 
 iters = 10; %pocet iteraci IVB algoritmu
-I = eye(length(x_0));
 
 for k = 1:steps
    nu{k+1} = nu{k}+1;
@@ -26,7 +25,7 @@ for k = 1:steps
    Sigma_i{1} = Sigma{k};
        
    for i = 2:iters
-       R = (nu{k}*Sigma_i{i-1}^-1)^-1; % \hat{R^-1}^-1
+       R = (nu{k}/Sigma_i{-1})^-1; % \hat{R^-1}^-1
        K = P_pred{k}*C'/(R+C*P_pred{k}*C');
        P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*R*K';
        x{i} = x_pred{k} + K*(y{k}-C*x_pred{k});

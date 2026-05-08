@@ -1,4 +1,6 @@
 function [x_f,P_f] = STF(u, y, x_0, P_0, A, B, C, Q, nu, R)
+mathring_y = height(y);
+
 steps = width(y);
 x_pred = cell([1 steps]);
 x_f = cell([1 steps]);
@@ -10,8 +12,8 @@ x_pred{1} = x_0;
 P_pred{1} = P_0;
 
 iters = 10; %pocet iteraci IVB algoritmu
-mathring_y = height(y);
 s = nu + mathring_y;
+I = eye(length(x_0));
 
 for k = 1:steps
    %datovy krok
@@ -25,8 +27,12 @@ for k = 1:steps
    for i = 2:iters
        Sigma{i} = nu + trace(((y{k}-C*x{i-1})*(y{k}-C*x{i-1})'+C*P{i-1}*C')/R);
        
-       P{i} = (C'/R*s/Sigma{i}*C + P_pred{k}^-1)^-1;
-       x{i} = P{i}*(P_pred{k}^-1*x_pred{k} + C'/R*s/Sigma{i}*y{k});
+       exp_R = (R^-1*s*Sigma{i}^-1)^-1; % \hat{R^-1}^-1
+       K = P_pred{k}*C'/(exp_R+C*P_pred{k}*C');
+       P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_R*K';
+       x{i} = x_pred{k} + K*(y{k}-C*x_pred{k});
+       % P{i} = (C'/R*s/Sigma{i}*C + P_pred{k}^-1)^-1;
+       % x{i} = P{i}*(P_pred{k}^-1*x_pred{k} + C'/R*s/Sigma{i}*y{k});
    end
    x_f{k} = x{end};
    P_f{k} = P{end};

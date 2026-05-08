@@ -1,4 +1,6 @@
 function [x_s,P_s] = STS_R(u, y, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0)
+mathring_y = height(y);
+mathring_k = length(y);
 
 steps = width(y);
 x_pred = cell([1 steps]);
@@ -6,8 +8,6 @@ x_f = cell([1 steps]);
 P_pred = cell([1 steps]);
 P_f = cell([1 steps]);
 y = num2cell(y, 1);
-mathring_y = height(y);
-mathring_k = length(y);
 
 l = cell([1 steps]);
 l(:) = {nu};
