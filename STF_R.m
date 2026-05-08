@@ -12,7 +12,7 @@ y = num2cell(y, 1);
 x_pred{1} = x_0;
 P_pred{1} = P_0;
 Sigma{1} = Sigma_0;
-s{1} = s_0;
+s{1} = s_0+1;
 
 iters = 10; %pocet iteraci IVB algoritmu
 
@@ -35,9 +35,10 @@ for k = 1:steps
        l{i} = nu+trace(s{k}*Sigma_i{i-1}^-1*((y{k}-C*x{i-1})*(y{k}-C*x{i-1})'+C*P{i-1}*C'));
        Sigma_i{i} = Sigma{k}+m/l{i}*((y{k}-C*x{i-1})*(y{k}-C*x{i-1})'+C*P{i-1}*C');
        
-       R = (s{k}*Sigma_i{i}^-1*m/l{i})^-1; % \hat{R^-1}^-1
-       K = P_pred{k}*C'/(R+C*P_pred{k}*C');
-       P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*R*K';
+       R = Sigma_i{i}/s{k};  % \hat{R^-1}^-1
+       exp_cov = (R^-1*m/l{i})^-1;
+       K = P_pred{k}*C'/(exp_cov+C*P_pred{k}*C');
+       P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_cov*K';
        x{i} = x_pred{k} + K*(y{k}-C*x_pred{k});
 
        % P{i} = (P_pred{k}^-1+C'*s{k}/Sigma_i{i}*m/l{i}*C)^-1;

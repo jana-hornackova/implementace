@@ -1,4 +1,4 @@
-function [x_s,P_s, R] = STS_R(u, y, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0)
+function [x_s,P_s] = STS_R(u, y, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0)
 mathring_y = height(y);
 mathring_k = length(y);
 
@@ -19,7 +19,6 @@ P_pred{1} = P_0;
 m = nu + mathring_y;
 s = s_0 + mathring_k;
 Sigma = Sigma_0;
-I = eye(length(x_0));
 
 iters = 10;
 
@@ -27,14 +26,10 @@ for i = 1:iters
 %dopredna rekurze
 for k = 1:steps
    %datovy krok
-   R = Sigma/s;  % \hat{R^-1}^-1
-   exp_cov = (R^-1*m/l{k})^-1;
-   K = P_pred{k}*C'/(exp_cov+C*P_pred{k}*C');
-   P_f{k} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_cov*K';
-   x_f{k} = x_pred{k} + K*(y{k}-C*x_pred{k});
+   R{k} = s*Sigma^-1*m/l{k};
 
-   % P_f{k} = (P_pred{k}^-1+C'*s/Sigma*m/l{k}*C)^-1;
-   % x_f{k} = P_f{k}*(P_pred{k}^-1*x_pred{k} + C'*s/Sigma*m/l{k}*y{k});
+   P_f{k} = (P_pred{k}^-1+C'*s/Sigma*m/l{k}*C)^-1;
+   x_f{k} = P_f{k}*(P_pred{k}^-1*x_pred{k} + C'*s/Sigma*m/l{k}*y{k});
 
    %casovy krok
    P_pred{k+1} = Q + A*P_f{k}*A';

@@ -27,9 +27,9 @@ for k = 1:steps
    for i = 2:iters
        Sigma{i} = nu + trace(((y{k}-C*x{i-1})*(y{k}-C*x{i-1})'+C*P{i-1}*C')/R);
        
-       exp_R = (R^-1*s*Sigma{i}^-1)^-1; % \hat{R^-1}^-1
-       K = P_pred{k}*C'/(exp_R+C*P_pred{k}*C');
-       P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_R*K';
+       exp_cov = (R^-1*s*Sigma{i}^-1)^-1;
+       K = P_pred{k}*C'/(exp_cov+C*P_pred{k}*C');
+       P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_cov*K';
        x{i} = x_pred{k} + K*(y{k}-C*x_pred{k});
        % P{i} = (C'/R*s/Sigma{i}*C + P_pred{k}^-1)^-1;
        % x{i} = P{i}*(P_pred{k}^-1*x_pred{k} + C'/R*s/Sigma{i}*y{k});

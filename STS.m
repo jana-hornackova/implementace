@@ -15,14 +15,19 @@ P_pred{1} = P_0;
 iters = 10; %pocet iteraci IVB algoritmu
 
 s = nu + mathring_y;
+I = eye(length(x_0));
 
 for i = 1:iters
 
 %dopredna rekurze
 for k = 1:steps
    %datovy krok
-   P_f{k} = (C'/R*s/Sigma{k}*C + P_pred{k}^-1)^-1;
-   x_f{k} = P_f{k}*(P_pred{k}^-1*x_pred{k} + C'/R*s/Sigma{k}*y{k});
+   exp_cov = (R^-1*s*Sigma{k}^-1)^-1;
+   K = P_pred{k}*C'/(exp_cov+C*P_pred{k}*C');
+   P_f{k} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_cov*K';
+   x_f{k} = x_pred{k} + K*(y{k}-C*x_pred{k});
+   %P_f{k} = (C'/R*s/Sigma{k}*C + P_pred{k}^-1)^-1;
+   %x_f{k} = P_f{k}*(P_pred{k}^-1*x_pred{k} + C'/R*s/Sigma{k}*y{k});
 
    %casovy krok
    P_pred{k+1} = Q + A*P_f{k}*A';

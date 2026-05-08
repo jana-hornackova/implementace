@@ -31,14 +31,14 @@ R_n = R_st * nu /(nu-2);
 %% simulace - urceni MSE algoritmu
 %inicializacni hodnoty
 x_0 = [0; 0; 1; 1];
-P_0 = 1*eye(4);
+P_0 = 100*eye(4);
 Sigma_0 = 0.1*eye(2);
 nu_0 = 0.1;
 s_0 = 0.1;
 
 algoritmy  = ["KF"; "STF"; "KF R"; "STF R"; "RTSS"; "STS"; "KS R"; "STS R"];
-odchylky_n = zeros([length(algoritmy) 1]);
-odchylky_st = zeros([length(algoritmy) 1]);
+odchylky_n = zeros([length(algoritmy) 2]);
+odchylky_st = zeros([length(algoritmy) 2]);
 avg_R_n = cell([1, 4]);
 for k = 1:numel(avg_R_n)
     avg_R_n{k} = zeros(size(R_n));
@@ -83,17 +83,17 @@ y_st = y + e_st;
 [x_f_STF_n, ~] = STF(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_s_STS_n, ~] = STS(u, y_n, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_f_KF_R_n, ~, R_KF_R_n] = KF_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_s_KS_R_n, ~] = KS_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_s_KS_R_n, ~, R_KS_R_n] = KS_R(u, y_n, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
 [x_f_STF_R_n, ~, R_STF_R_n] = STF_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
-[x_s_STS_R_n, ~] = STS_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_s_STS_R_n, ~, R_STS_R_n] = STS_R(u, y_n, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 
 vysledky_n = {x_f_KF_n, x_f_STF_n, x_f_KF_R_n, x_f_STF_R_n, x_s_RTSS_n, x_s_STS_n, x_s_KS_R_n, x_s_STS_R_n};
-R = {R_KF_R_n, R_STF_R_n};
+R = {R_KF_R_n, R_KS_R_n, R_STF_R_n, R_STS_R_n};
 
 for i = 1:numel(vysledky_n)
-     MSE_r = MSE(cell2mat(vysledky_n{i}), x_real);
+     [MSE_r, MSE_v] = MSE(cell2mat(vysledky_n{i}), x_real);
      odchylky_n(i, 1)= ((j-1)*odchylky_n(i,1)+MSE_r)/j; 
-     %odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+MSE_v)/j;
+     odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+MSE_v)/j;
 end
 
 for i = 1:numel(R)
@@ -106,17 +106,17 @@ end
 [x_f_STF_st, ~] = STF(u, y_st, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_s_STS_st, ~] = STS(u, y_st, x_0, P_0, A, B, C, Q, nu, R_st);
 [x_f_KF_R_st, ~, R_KF_R_st] = KF_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
-[x_s_KS_R_st, ~] = KS_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_s_KS_R_st, ~, R_KS_R_st] = KS_R(u, y_st, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
 [x_f_STF_R_st, ~, R_STF_R_st] = STF_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
-[x_s_STS_R_st, ~] = STS_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
+[x_s_STS_R_st, ~, R_STS_R_st] = STS_R(u, y_st, x_0, P_0, A, B, C, Q, nu, Sigma_0, s_0);
 
 vysledky_st = {x_f_KF_st, x_f_STF_st, x_f_KF_R_st, x_f_STF_R_st, x_s_RTSS_st, x_s_STS_st, x_s_KS_R_st, x_s_STS_R_st};
-R = {R_KF_R_st, R_STF_R_st};
+R = {R_KF_R_st, R_KS_R_st, R_STF_R_st, R_STS_R_st};
 
 for i = 1:numel(vysledky_st)
-     MSE_r = MSE(cell2mat(vysledky_st{i}), x_real);
+     [MSE_r, MSE_v] = MSE(cell2mat(vysledky_st{i}), x_real);
      odchylky_st(i, 1)= ((j-1)*odchylky_st(i,1)+MSE_r)/j; 
-     %odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+MSE_v)/j;
+     odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+MSE_v)/j;
      
 end
 
@@ -130,23 +130,9 @@ end
 close(bar)
 
 tabulka = table('RowNames',algoritmy);
-tabulka.("Normalní šum") = odchylky_n;
-tabulka.("Studentův šum") = odchylky_st;
+tabulka.("MSE Normalní šum [poloha | rychlost]") = odchylky_n;
+tabulka.("MSE Studentův šum [poloha | rychlost]") = odchylky_st;
 tabulka
-
-% x_s_KS_R = cell2mat(x_s_KS_R);
-% x_f_KF_R = cell2mat(x_f_KF_R);
-% 
-% figure
-% stairs(x_real(1,:)')
-% hold on
-% stairs(x_s_KS_R(1,:)')
-% hold on
-% stairs(x_f_KF_R(1,:)')
-% hold on
-% stairs(y_st(1,:)')
-% legend("real", "ksr", "rtss", "y")
-
 
 %% simulace - testování proti výpadkům měření
 
