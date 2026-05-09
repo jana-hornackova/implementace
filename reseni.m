@@ -28,7 +28,7 @@ nu = 5;
 R_n = R_st * nu /(nu-2);
 
 
-%% simulace - urceni RMSE algoritmu
+%% simulace - urceni MSE algoritmu
 %inicializacni hodnoty
 x_0 = [0; 0; 1; 1];
 P_0 = 100*eye(4);
@@ -91,9 +91,9 @@ vysledky_n = {x_f_KF_n, x_f_STF_n, x_f_KF_R_n, x_f_STF_R_n, x_s_RTSS_n, x_s_STS_
 R = {R_KF_R_n, R_KS_R_n, R_STF_R_n, R_STS_R_n};
 
 for i = 1:numel(vysledky_n)
-     [RMSE_r, RMSE_v] = RMSE(cell2mat(vysledky_n{i}), x_real);
-     odchylky_n(i, 1)= ((j-1)*odchylky_n(i,1)+RMSE_r)/j; 
-     odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+RMSE_v)/j;
+     [MSE_r, MSE_v] = MSE(cell2mat(vysledky_n{i}), x_real);
+     odchylky_n(i, 1)= ((j-1)*odchylky_n(i,1)+MSE_r)/j; 
+     odchylky_n(i, 2)= ((j-1)*odchylky_n(i,2)+MSE_v)/j;
 end
 
 for i = 1:numel(R)
@@ -114,9 +114,9 @@ vysledky_st = {x_f_KF_st, x_f_STF_st, x_f_KF_R_st, x_f_STF_R_st, x_s_RTSS_st, x_
 R = {R_KF_R_st, R_KS_R_st, R_STF_R_st, R_STS_R_st};
 
 for i = 1:numel(vysledky_st)
-     [RMSE_r, RMSE_v] = RMSE(cell2mat(vysledky_st{i}), x_real);
-     odchylky_st(i, 1)= ((j-1)*odchylky_st(i,1)+RMSE_r)/j; 
-     odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+RMSE_v)/j;
+     [MSE_r, MSE_v] = MSE(cell2mat(vysledky_st{i}), x_real);
+     odchylky_st(i, 1)= ((j-1)*odchylky_st(i,1)+MSE_r)/j; 
+     odchylky_st(i, 2)= ((j-1)*odchylky_st(i,2)+MSE_v)/j;
      
 end
 
@@ -130,8 +130,8 @@ end
 close(bar)
 
 tabulka = table('RowNames',algoritmy);
-tabulka.("RMSE Normalní šum [poloha | rychlost]") = odchylky_n;
-tabulka.("RMSE Studentův šum [poloha | rychlost]") = odchylky_st;
+tabulka.("MSE Normalní šum [poloha | rychlost]") = odchylky_n;
+tabulka.("MSE Studentův šum [poloha | rychlost]") = odchylky_st;
 tabulka
 
 %% simulace - testování proti výpadkům měření
@@ -170,7 +170,7 @@ r_n = logspace(0, 3, 100);
 
 bar = waitbar(0, "Probíhá hledání optimálních parametrů pro KF: 0 %");
 iters = numel(r_n);
-RMSE_KF = zeros(iters, 1);
+MSE_KF = zeros(iters, 1);
 
 for i = 1:iters
 R_test = r_n(i)*eye(2);
@@ -181,15 +181,15 @@ x_pred = circshift(A*cell2mat(x_f_KF)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
 chyba_pred = C*x_pred-y_test{j};
 
-RMSE_KF(i) = ((j-1)*RMSE_KF(i)+mean(sqrt(chyba_pred(1,:).^2+chyba_pred(2,:).^2)))/j;
+MSE_KF(i) = ((j-1)*MSE_KF(i)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/j;
 end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro KF: " + num2str(100*i/iters)+ " %");
 end
 
 figure
-semilogx(r_n, RMSE_KF)
+semilogx(r_n, MSE_KF)
 xlabel("r")
-ylabel("RMSE")
+ylabel("MSE")
 
 %% nalezeni optimalnich parametru pro STF
 r_st = logspace(0, 2, 50);
@@ -198,7 +198,7 @@ nu = 3:1:25;
 
 bar = waitbar(0, "Probíhá hledání optimálních parametrů pro STF: 0 %");
 iters = numel(nu_grid);
-RMSE_STF = zeros(size(nu_grid));
+MSE_STF = zeros(size(nu_grid));
 
 for i = 1:iters
 R_test = r_grid(i)*eye(2);
@@ -210,18 +210,18 @@ x_pred = circshift(A*cell2mat(x_f_STF)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
 chyba_pred = C*x_pred-y_test{j};
 
-RMSE_STF(i)=((j-1)*RMSE_STF(i)+mean(sqrt(chyba_pred(1,:).^2+chyba_pred(2,:).^2)))/j;
+MSE_STF(i)=((j-1)*MSE_STF(i)+mean(chyba_pred(1,:).^2+(chyba_pred(2,:).^2)))/j;
 end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro STF: " + num2str(100*i/iters)+ " %");
 end
 close(bar)
 
 figure
-surf(nu_grid, r_grid, RMSE_STF, 'EdgeColor', 'none')
+surf(nu_grid, r_grid, MSE_STF, 'EdgeColor', 'none')
 set(gca, 'YScale', 'log')
 xlabel('\nu')
 ylabel('r')
-zlabel('RMSE')
+zlabel('MSE')
 colormap gray
 colorbar
 
@@ -230,7 +230,7 @@ nu = 3:0.1:20;
 
 bar = waitbar(0, "Probíhá hledání optimálních parametrů pro STF_R: 0 %");
 iters = numel(nu);
-RMSE_STF_R = zeros(1,iters);
+MSE_STF_R = zeros(1,iters);
 
 for v = 1:iters
 for j = 1:10
@@ -240,34 +240,34 @@ x_pred = circshift(A*cell2mat(x_f_STF_R)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
 chyba_pred = C*x_pred-y_test{j};
 
-RMSE_STF_R(v)=((j-1)*RMSE_STF_R(v)+mean(sqrt(chyba_pred(1,:).^2+chyba_pred(2,:).^2)))/j;
+MSE_STF_R(v)=((j-1)*MSE_STF_R(v)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/j;
 end
 waitbar(v/iters, bar,"Probíhá hledání optimálních parametrů pro STF_R: " + num2str(100*v/iters)+ " %");
 end
 close(bar)
 
 figure
-plot(nu, RMSE_STF_R)
+plot(nu, MSE_STF_R)
 xlabel("\nu")
-ylabel("RMSE")
+ylabel("MSE")
 
 %% testování filtračních algoritmů s optimálními parametry
 
 %optimalni parametry
-[~, idx_KF] = min(RMSE_KF);
+[~, idx_KF] = min(MSE_KF);
 opt_R_KF = r_n(idx_KF)*eye(2);
 
-[~, idx_STF] = min(RMSE_STF(:));
+[~, idx_STF] = min(MSE_STF(:));
 opt_R_STF = r_grid(idx_STF)*eye(2);
 opt_nu_STF = nu_grid(idx_STF);
 
-[~, idx_STF_R] = min(RMSE_STF_R);
+[~, idx_STF_R] = min(MSE_STF_R);
 opt_nu_STF_R = nu(idx_STF_R);
-E_r = cell(1,4);
-for i = 1:numel(E_r)
-    E_r{i} = zeros(1, steps);
+SE_r = cell(1,4);
+for i = 1:numel(SE)
+    SE_r{i} = zeros(1, steps);
 end
-E_v = E_r;
+SE_v = SE_r;
 
 for j = 1:10    
 [x_f_KF, ~] = KF(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_R_KF);
@@ -276,10 +276,14 @@ for j = 1:10
 [x_f_STF_R, ~, ~] = STF_R(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_nu_STF_R, Sigma_0, s_0);
 
 vysledky = {x_f_KF, x_f_STF, x_f_KF_R, x_f_STF_R};
-for i = 1:numel(E_r) 
+for i = 1:numel(SE) 
+    % x_pred = circshift(A*cell2mat(vysledky{i})+B*u, 1, 2);
+    % x_pred(:, 1) = x_0;
+    % chyba_pred = C*x_pred-y_test{j};
+    % SE{i} = ((j-1)*SE{i}+sum(chyba_pred.^2))/j;
     chyba = cell2mat(vysledky{i})-x{j};
-    E_r{i} = ((j-1)*E_r{i}+sqrt(sum(chyba(1:2,:).^2)))/j;
-    E_v{i} = ((j-1)*E_v{i}+sqrt(sum(chyba(3:4,:).^2)))/j;
+    SE_r{i} = ((j-1)*SE_r{i}+sum(chyba(1:2,:).^2))/j;
+    SE_v{i} = ((j-1)*SE_v{i}+sum(chyba(3:4,:).^2))/j;
 
 end
 
@@ -288,22 +292,22 @@ end
 figure
 tiledlayout(2, 1, TileSpacing="tight")
 nexttile
-for i = 1:numel(E_r)
-    plot(t, E_r{i})
+for i = 1:numel(SE)
+    plot(t, SE_r{i})
     hold on
 end
 legend("KF", "STF", "KF R", "STF R")
 grid on
 xlabel("t [s]")
-ylabel("E polohy [m]")
+ylabel("SE polohy")
 hold off
 nexttile
-for i = 1:numel(E_v)
-    plot(t, E_v{i})
+for i = 1:numel(SE)
+    plot(t, SE_v{i})
     hold on
 end
 legend("KF", "STF", "KF R", "STF R")
 grid on
 xlabel("t [s]")
-ylabel("E rychlosti [m/s]")
+ylabel("SE rychlosti")
 hold off
