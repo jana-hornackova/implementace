@@ -185,6 +185,7 @@ MSE_KF(i) = ((j-1)*MSE_KF(i)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/
 end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro KF: " + num2str(100*i/iters)+ " %");
 end
+close(bar)
 
 figure
 semilogx(r_n, MSE_KF)
