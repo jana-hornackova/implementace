@@ -181,7 +181,7 @@ x_pred = circshift(A*cell2mat(x_f_KF)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
 chyba_pred = C*x_pred-y_test{j};
 
-RMSE_KF(i) = ((j-1)*RMSE_KF(i)+mean(sqrt(chyba_pred(1,:).^2+chyba_pred(2,:).^2)))/j;
+RMSE_KF(i) = ((j-1)*RMSE_KF(i)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/j;
 end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro KF: " + num2str(100*i/iters)+ " %");
 end
@@ -210,7 +210,7 @@ x_pred = circshift(A*cell2mat(x_f_STF)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
 chyba_pred = C*x_pred-y_test{j};
 
-RMSE_STF(i)=((j-1)*RMSE_STF(i)+mean(sqrt(chyba_pred(1,:).^2+chyba_pred(2,:).^2)))/j;
+RMSE_STF(i)=((j-1)*RMSE_STF(i)+mean(chyba_pred(1,:).^2+(chyba_pred(2,:).^2)))/j;
 end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro STF: " + num2str(100*i/iters)+ " %");
 end
@@ -240,7 +240,7 @@ x_pred = circshift(A*cell2mat(x_f_STF_R)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
 chyba_pred = C*x_pred-y_test{j};
 
-RMSE_STF_R(v)=((j-1)*RMSE_STF_R(v)+mean(sqrt(chyba_pred(1,:).^2+chyba_pred(2,:).^2)))/j;
+RMSE_STF_R(v)=((j-1)*RMSE_STF_R(v)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/j;
 end
 waitbar(v/iters, bar,"Probíhá hledání optimálních parametrů pro STF_R: " + num2str(100*v/iters)+ " %");
 end
@@ -263,11 +263,11 @@ opt_nu_STF = nu_grid(idx_STF);
 
 [~, idx_STF_R] = min(RMSE_STF_R);
 opt_nu_STF_R = nu(idx_STF_R);
-E_r = cell(1,4);
-for i = 1:numel(E_r)
-    E_r{i} = zeros(1, steps);
+SE_r = cell(1,4);
+for i = 1:numel(SE)
+    SE_r{i} = zeros(1, steps);
 end
-E_v = E_r;
+SE_v = SE_r;
 
 for j = 1:10    
 [x_f_KF, ~] = KF(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_R_KF);
@@ -276,10 +276,14 @@ for j = 1:10
 [x_f_STF_R, ~, ~] = STF_R(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_nu_STF_R, Sigma_0, s_0);
 
 vysledky = {x_f_KF, x_f_STF, x_f_KF_R, x_f_STF_R};
-for i = 1:numel(E_r) 
+for i = 1:numel(SE) 
+    % x_pred = circshift(A*cell2mat(vysledky{i})+B*u, 1, 2);
+    % x_pred(:, 1) = x_0;
+    % chyba_pred = C*x_pred-y_test{j};
+    % SE{i} = ((j-1)*SE{i}+sum(chyba_pred.^2))/j;
     chyba = cell2mat(vysledky{i})-x{j};
-    E_r{i} = ((j-1)*E_r{i}+sqrt(sum(chyba(1:2,:).^2)))/j;
-    E_v{i} = ((j-1)*E_v{i}+sqrt(sum(chyba(3:4,:).^2)))/j;
+    SE_r{i} = ((j-1)*SE_r{i}+sum(chyba(1:2,:).^2))/j;
+    SE_v{i} = ((j-1)*SE_v{i}+sum(chyba(3:4,:).^2))/j;
 
 end
 
@@ -288,22 +292,22 @@ end
 figure
 tiledlayout(2, 1, TileSpacing="tight")
 nexttile
-for i = 1:numel(E_r)
-    plot(t, E_r{i})
+for i = 1:numel(SE)
+    plot(t, SE_r{i})
     hold on
 end
 legend("KF", "STF", "KF R", "STF R")
 grid on
 xlabel("t [s]")
-ylabel("E polohy [m]")
+ylabel("SE polohy")
 hold off
 nexttile
-for i = 1:numel(E_v)
-    plot(t, E_v{i})
+for i = 1:numel(SE)
+    plot(t, SE_v{i})
     hold on
 end
 legend("KF", "STF", "KF R", "STF R")
 grid on
 xlabel("t [s]")
-ylabel("E rychlosti [m/s]")
+ylabel("SE rychlosti")
 hold off
