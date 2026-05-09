@@ -264,7 +264,7 @@ opt_nu_STF = nu_grid(idx_STF);
 [~, idx_STF_R] = min(MSE_STF_R);
 opt_nu_STF_R = nu(idx_STF_R);
 SE_r = cell(1,4);
-for i = 1:numel(SE)
+for i = 1:numel(SE_r)
     SE_r{i} = zeros(1, steps);
 end
 SE_v = SE_r;
@@ -276,11 +276,7 @@ for j = 1:10
 [x_f_STF_R, ~, ~] = STF_R(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_nu_STF_R, Sigma_0, s_0);
 
 vysledky = {x_f_KF, x_f_STF, x_f_KF_R, x_f_STF_R};
-for i = 1:numel(SE) 
-    % x_pred = circshift(A*cell2mat(vysledky{i})+B*u, 1, 2);
-    % x_pred(:, 1) = x_0;
-    % chyba_pred = C*x_pred-y_test{j};
-    % SE{i} = ((j-1)*SE{i}+sum(chyba_pred.^2))/j;
+for i = 1:numel(SE_r) 
     chyba = cell2mat(vysledky{i})-x{j};
     SE_r{i} = ((j-1)*SE_r{i}+sum(chyba(1:2,:).^2))/j;
     SE_v{i} = ((j-1)*SE_v{i}+sum(chyba(3:4,:).^2))/j;
@@ -292,7 +288,7 @@ end
 figure
 tiledlayout(2, 1, TileSpacing="tight")
 nexttile
-for i = 1:numel(SE)
+for i = 1:numel(SE_r)
     plot(t, SE_r{i})
     hold on
 end
@@ -302,7 +298,7 @@ xlabel("t [s]")
 ylabel("SE polohy")
 hold off
 nexttile
-for i = 1:numel(SE)
+for i = 1:numel(SE_v)
     plot(t, SE_v{i})
     hold on
 end
