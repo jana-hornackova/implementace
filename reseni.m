@@ -136,6 +136,7 @@ tabulka
 
 %% simulace - testování proti výpadkům měření
 
+for j = 1:10
 %generovani vstupu
 u = zeros([1 steps]);
 
@@ -148,6 +149,7 @@ x_real(:, 1) = x_0;
 for i = 2:1:steps
     x_real(:, i) = A * x_real(:, i-1) + B*u(i-1) + w(:, i-1);
 end
+x{j} = x_real;
 
 %generovani sumu mereni
 e = mvnrnd(zeros(1, length(R_n)), R_n, steps)'; 
@@ -161,10 +163,10 @@ for i = 1:1:steps
    y(:, i) = C*x_real(:, i); 
 end
 
-y_test = y + e;
-
+y_test{j} = y + e;
+end
 %% nalezeni optimalnich parametru pro KF
-r_n = logspace(0, 3, 1000);
+r_n = logspace(0, 3, 100);
 
 bar = waitbar(0, "Probíhá hledání optimálních parametrů pro KF: 0 %");
 iters = numel(r_n);
@@ -173,48 +175,46 @@ MSE_KF = zeros(iters, 1);
 for i = 1:iters
 R_test = r_n(i)*eye(2);
 
-[x_f_KF, P_f_KF] = KF(u, y_test, x_0, P_0, A, B, C, Q, R_test);
+for j = 1:10
+[x_f_KF, ~] = KF(u, y_test{j}, x_0, P_0, A, B, C, Q, R_test);
 x_pred = circshift(A*cell2mat(x_f_KF)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
-y_pred = C*x_pred;
+chyba_pred = C*x_pred-y_test{j};
 
-MSE_KF(i) = MSE(y_pred, y_test);
+MSE_KF(i) = ((j-1)*MSE_KF(i)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/j;
+end
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro KF: " + num2str(100*i/iters)+ " %");
 end
-%%
+
 figure
 semilogx(r_n, MSE_KF)
 xlabel("r")
 ylabel("MSE")
 
 %% nalezeni optimalnich parametru pro STF
-r_st = logspace(-1, 2, 100);
-nu = 2:1:50;
+r_st = logspace(0, 2, 50);
+nu = 3:1:25;
+[nu_grid, r_grid] = meshgrid(nu, r_st);
 
 bar = waitbar(0, "Probíhá hledání optimálních parametrů pro STF: 0 %");
-iters = numel(r_st);
-MSE_STF = zeros(iters, numel(nu));
-for i = 1:iters
-R_test = r_st(i)*eye(2);
+iters = numel(nu_grid);
+MSE_STF = zeros(size(nu_grid));
 
-for j = 1:numel(nu)
-[x_f_STF, P_f_STF] = STF(u, y_test, x_0, P_0, A, B, C, Q, nu(j), R_test);
+for i = 1:iters
+R_test = r_grid(i)*eye(2);
+
+for j = 1:10
+[x_f_STF, ~] = STF(u, y_test{j}, x_0, P_0, A, B, C, Q, nu_grid(i), R_test);
 
 x_pred = circshift(A*cell2mat(x_f_STF)+B*u, 1, 2);
 x_pred(:, 1) = x_0;
-y_pred = C*x_pred;
+chyba_pred = C*x_pred-y_test{j};
 
-MSE_STF(i,j) = MSE(y_pred, y_test);
+MSE_STF(i)=((j-1)*MSE_STF(i)+mean(chyba_pred(1,:).^2+(chyba_pred(2,:).^2)))/j;
 end
-
 waitbar(i/iters, bar,"Probíhá hledání optimálních parametrů pro STF: " + num2str(100*i/iters)+ " %");
 end
 close(bar)
-%save("MSE_KF.mat", "MSE_KF", "r_n")
-%save("MSE_STF.mat", "MSE_STF", "r_st", "nu")
-
-%%
-[nu_grid, r_grid] = meshgrid(nu, r_st);
 
 figure
 surf(nu_grid, r_grid, MSE_STF, 'EdgeColor', 'none')
@@ -222,4 +222,92 @@ set(gca, 'YScale', 'log')
 xlabel('\nu')
 ylabel('r')
 zlabel('MSE')
+colormap gray
 colorbar
+
+%% nalezeni optimalnich parametru pro STF_R
+nu = 3:0.1:20;
+
+bar = waitbar(0, "Probíhá hledání optimálních parametrů pro STF_R: 0 %");
+iters = numel(nu);
+MSE_STF_R = zeros(1,iters);
+
+for v = 1:iters
+for j = 1:10
+[x_f_STF_R, ~, ~] = STF_R(u, y_test{j}, x_0, P_0, A, B, C, Q, nu(v), Sigma_0, s_0);
+
+x_pred = circshift(A*cell2mat(x_f_STF_R)+B*u, 1, 2);
+x_pred(:, 1) = x_0;
+chyba_pred = C*x_pred-y_test{j};
+
+MSE_STF_R(v)=((j-1)*MSE_STF_R(v)+mean(chyba_pred(1,:).^2)+mean(chyba_pred(2,:).^2))/j;
+end
+waitbar(v/iters, bar,"Probíhá hledání optimálních parametrů pro STF_R: " + num2str(100*v/iters)+ " %");
+end
+close(bar)
+
+figure
+plot(nu, MSE_STF_R)
+xlabel("\nu")
+ylabel("MSE")
+
+%% testování filtračních algoritmů s optimálními parametry
+
+%optimalni parametry
+[~, idx_KF] = min(MSE_KF);
+opt_R_KF = r_n(idx_KF)*eye(2);
+
+[~, idx_STF] = min(MSE_STF(:));
+opt_R_STF = r_grid(idx_STF)*eye(2);
+opt_nu_STF = nu_grid(idx_STF);
+
+[~, idx_STF_R] = min(MSE_STF_R);
+opt_nu_STF_R = nu(idx_STF_R);
+SE_r = cell(1,4);
+for i = 1:numel(SE)
+    SE_r{i} = zeros(1, steps);
+end
+SE_v = SE_r;
+
+for j = 1:10    
+[x_f_KF, ~] = KF(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_R_KF);
+[x_f_STF, ~] = STF(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_nu_STF, opt_R_STF);
+[x_f_KF_R, ~, ~] = KF_R(u, y_test{j}, x_0, P_0, A, B, C, Q, Sigma_0, nu_0);
+[x_f_STF_R, ~, ~] = STF_R(u, y_test{j}, x_0, P_0, A, B, C, Q, opt_nu_STF_R, Sigma_0, s_0);
+
+vysledky = {x_f_KF, x_f_STF, x_f_KF_R, x_f_STF_R};
+for i = 1:numel(SE) 
+    % x_pred = circshift(A*cell2mat(vysledky{i})+B*u, 1, 2);
+    % x_pred(:, 1) = x_0;
+    % chyba_pred = C*x_pred-y_test{j};
+    % SE{i} = ((j-1)*SE{i}+sum(chyba_pred.^2))/j;
+    chyba = cell2mat(vysledky{i})-x{j};
+    SE_r{i} = ((j-1)*SE_r{i}+sum(chyba(1:2,:).^2))/j;
+    SE_v{i} = ((j-1)*SE_v{i}+sum(chyba(3:4,:).^2))/j;
+
+end
+
+end
+
+figure
+tiledlayout(2, 1, TileSpacing="tight")
+nexttile
+for i = 1:numel(SE)
+    plot(t, SE_r{i})
+    hold on
+end
+legend("KF", "STF", "KF R", "STF R")
+grid on
+xlabel("t [s]")
+ylabel("SE polohy")
+hold off
+nexttile
+for i = 1:numel(SE)
+    plot(t, SE_v{i})
+    hold on
+end
+legend("KF", "STF", "KF R", "STF R")
+grid on
+xlabel("t [s]")
+ylabel("SE rychlosti")
+hold off
