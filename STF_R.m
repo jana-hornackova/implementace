@@ -14,7 +14,7 @@ P_pred{1} = P_0;
 Sigma{1} = Sigma_0;
 s{1} = s_0+1;
 
-iters = 10; %pocet iteraci IVB algoritmu
+iters = 100; %pocet iteraci IVB algoritmu
 
 m = nu + mathring_y;
 I = eye(length(x_0));
@@ -41,8 +41,6 @@ for k = 1:steps
        P{i} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_cov*K';
        x{i} = x_pred{k} + K*(y{k}-C*x_pred{k});
 
-       % P{i} = (P_pred{k}^-1+C'*s{k}/Sigma_i{i}*m/l{i}*C)^-1;
-       % x{i} = P{i}*(P_pred{k}^-1*x_pred{k} + C'*s{k}/Sigma_i{i}*m/l{i}*y{k});
    end
    x_f{k} = x{end};
    P_f{k} = P{end};
@@ -50,7 +48,7 @@ for k = 1:steps
 
    %casovy krok
    P_pred{k+1} = Q + A*P_f{k}*A';
-   x_pred{k+1} = A*x_f{k} + B*u(k);
+   x_pred{k+1} = A*x_f{k} + B*u{k};
    Sigma{k+1} = Sigma{k};
 end
 end

@@ -21,7 +21,7 @@ s = s_0 + mathring_k;
 Sigma = Sigma_0;
 I = eye(length(x_0));
 
-iters = 10;
+iters = 100;
 
 for i = 1:iters
 %dopredna rekurze
@@ -33,12 +33,9 @@ for k = 1:steps
    P_f{k} = (I-K*C)*P_pred{k}*(I-K*C)'+K*exp_cov*K';
    x_f{k} = x_pred{k} + K*(y{k}-C*x_pred{k});
 
-   % P_f{k} = (P_pred{k}^-1+C'*s/Sigma*m/l{k}*C)^-1;
-   % x_f{k} = P_f{k}*(P_pred{k}^-1*x_pred{k} + C'*s/Sigma*m/l{k}*y{k});
-
    %casovy krok
    P_pred{k+1} = Q + A*P_f{k}*A';
-   x_pred{k+1} = A*x_f{k} + B*u(k);
+   x_pred{k+1} = A*x_f{k} + B*u{k};
 end
 
 x_pred{end} = [];

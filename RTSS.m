@@ -19,11 +19,8 @@ for k = 1:steps
 
    %casovy krok
    P_pred{k+1} = Q + A*P_f{k}*A';
-   x_pred{k+1} = A*x_f{k} + B*u(k);
+   x_pred{k+1} = A*x_f{k} + B*u{k};
 end
-
-x_pred{end} = [];
-P_pred{end} = [];
 
 %zpetna rekurze
 x_s = cell(size(x_f));

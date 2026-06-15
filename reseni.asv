@@ -5,7 +5,7 @@
 %%
 %parametry simulace
 Ts = 0.1;
-TMAX = 200;
+TMAX = 20;
 t = 0:Ts:TMAX;
 steps = length(t);
 
@@ -28,7 +28,7 @@ nu = 5;
 R_n = R_st * nu /(nu-2);
 
 %%
-Q = 0*kron([Ts^3/3 Ts^2/2;Ts^2/2 Ts], eye(2));
+Q = 0;
 x_0 = [0; 0; 0; 0];
 P_0 = 100*eye(4);
 Sigma_0 = 0.1*eye(2);
@@ -61,47 +61,14 @@ for i = 1:1:steps
 end
 
 %vystupy zatizene sumem
-% y_n = y + e_n;
-% 
-% k = floor(steps/2);
-% for i = k:steps
-%     [x_s_RTSS_n, ~] = RTSS(u(1:i), y_n(:, 1:i), x_0, P_0, A, B, C, Q, R_n);
-%     x_k = x_s_RTSS_n{k}-x_real(:,k);
-%     odchylka(i) = sum(x_k(1:2).^2);
-% end
-% odchylka = odchylka(k:steps);
-% plot(odchylka)
-% vystupy zatizene sumem
 y_n = y + e_n;
+
 k = floor(steps/2);
-
-% Předalokace pole pro absolutní odchylky
-absolutni_odchylka = zeros(1, steps - k + 1);
-
 for i = k:steps
-    [x_s_RTSS_n, ~] = RTSS(u(1:i), y_n(:, 1:i), x_0, P_0, A, B, C, Q, R_n);
-    x_k = x_s_RTSS_n{k} - x_real(:,k);
-    
-    % Ukládání od indexu 1 do (steps - k + 1)
-    idx = i - k + 1;
-    absolutni_odchylka(idx) = sum(x_k(1:2).^2);
+    [x_s_RTSS_n, ~] = RTSS(u{1:i}, y_n{1:i}, x_0, P_0, A, B, C, Q, R_n);
+    odchy
 end
 
-% VÝPOČET PROCENTUÁLNÍ ZMĚNY
-% Vztáženo k první hodnotě (absolutni_odchylka(1) odpovídá času i = k)
-procentualni_zmena = ((absolutni_odchylka - absolutni_odchylka(1)) / absolutni_odchylka(1)) * 100;
-
-%%
-% Vykreslení grafu
-figure('Color', 'w');
-plot(k:steps, procentualni_zmena, 'b-', 'LineWidth', 2)
-xlim([1000 1050])
-grid on;
-
-% Formátování grafu
-xlabel('Koncový krok výpočtu vyhlazování', 'FontSize', 11);
-ylabel('Změna odchylky [%]', 'FontSize', 11);
-title(['Změna chyby odhadu plohy v kroku k = ' num2str(k) ' při měnícím se horizontu vyhlazování (q=0)'], 'FontSize', 12);
 
 %% simulace - urceni MSE algoritmu
 %inicializacni hodnoty
